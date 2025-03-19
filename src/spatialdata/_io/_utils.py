@@ -392,10 +392,9 @@ StoreLike: TypeAlias = str | Path | UPath | zarr.storage.StoreLike | zarr.Group
 
 
 def _open_zarr_store(path: StoreLike, **kwargs: Any) -> zarr.storage.BaseStore:
-    # TODO: ensure kwargs like mode are enforced everywhere and passed correctly to the store
     if isinstance(path, str | Path):
         # if the input is str or Path, map it to UPath
-        path = UPath(path)
+        path = UPath(path, **{k: v for k, v in kwargs.items() if k not in ["dimension_separator", "normalize_keys"]})
     if isinstance(path, PosixUPath | WindowsUPath):
         # if the input is a local path, use DirectoryStore
         return zarr.storage.DirectoryStore(path.path, dimension_separator="/")
@@ -417,6 +416,8 @@ def _open_zarr_store(path: StoreLike, **kwargs: Any) -> zarr.storage.BaseStore:
         return FSStore(path, **kwargs)
     if isinstance(path, UPath):
         # if input is a remote UPath, map it to an FSStore
+        for key in path.fs.storage_options:
+            kwargs.pop(key, None)
         return FSStore(path.path, fs=path.fs, **kwargs)
     raise TypeError(f"Unsupported type: {type(path)}")
 

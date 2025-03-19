@@ -1,6 +1,5 @@
 import pytest
 import zarr
-from upath import UPath
 
 from spatialdata import SpatialData
 
@@ -9,25 +8,30 @@ class TestRemote:
     # Test actual remote datasets from https://spatialdata.scverse.org/en/latest/tutorials/notebooks/datasets/README.html
 
     @pytest.fixture(params=["merfish", "mibitof", "mibitof_alt"])
-    def s3_address(self, request):
-        urls = {
-            "merfish": UPath(
-                "s3://spatialdata/spatialdata-sandbox/merfish.zarr", endpoint_url="https://s3.embl.de", anon=True
+    def remote_location(self, request):
+        urlpath_sopts = {
+            "merfish": (
+                "s3://spatialdata/spatialdata-sandbox/merfish.zarr",
+                {"endpoint_url": "https://s3.embl.de", "anon": True},
             ),
-            "mibitof": UPath(
-                "s3://spatialdata/spatialdata-sandbox/mibitof.zarr", endpoint_url="https://s3.embl.de", anon=True
+            "mibitof": (
+                "s3://spatialdata/spatialdata-sandbox/mibitof.zarr",
+                {"endpoint_url": "https://s3.embl.de", "anon": True},
             ),
-            "mibitof_alt": "https://dl01.irc.ugent.be/spatial/mibitof/data.zarr/",
+            "mibitof_alt": (
+                "https://dl01.irc.ugent.be/spatial/mibitof/data.zarr/",
+                {},
+            ),
         }
-        return urls[request.param]
+        return urlpath_sopts[request.param]
 
-    def test_remote(self, s3_address):
-        # TODO: remove selection once support for points, shapes and tables is added
-        sdata = SpatialData.read(s3_address, selection=("images", "labels"))
+    def test_remote(self, remote_location):
+        urlpath, storage_options = remote_location
+        sdata = SpatialData.read(urlpath, storage_options=storage_options)
         assert len(list(sdata.gen_elements())) > 0
 
-    def test_remote_consolidated(self, s3_address):
-        urlpath, storage_options = str(s3_address), getattr(s3_address, "storage_options", {})
+    def test_remote_consolidated(self, remote_location):
+        urlpath, storage_options = remote_location
         root = zarr.open_consolidated(urlpath, mode="r", metadata_key="zmetadata", storage_options=storage_options)
-        sdata = SpatialData.read(root, selection=("images", "labels"))
+        sdata = SpatialData.read(root)
         assert len(list(sdata.gen_elements())) > 0

@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 import warnings
 from json import JSONDecodeError
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 import zarr
 from anndata import AnnData
@@ -101,6 +101,7 @@ def read_zarr(
     store: StoreLike,
     selection: None | tuple[str] = None,
     on_bad_files: Literal[BadFileHandleMethod.ERROR, BadFileHandleMethod.WARN] = BadFileHandleMethod.ERROR,
+    storage_options: dict[str, Any] | None = None,
 ) -> SpatialData:
     """
     Read a SpatialData dataset from a zarr store (on-disk or remote).
@@ -124,11 +125,14 @@ def read_zarr(
           object is returned containing only elements that could be read. Failures can only be
           determined from the warnings.
 
+    storage_options
+        fsspec filesystem specific storage options for remote filesystems
+
     Returns
     -------
     A SpatialData object.
     """
-    _store = _open_zarr_store(store)
+    _store = _open_zarr_store(store, **(storage_options or {}))
     f = zarr.group(_store)
 
     images = {}

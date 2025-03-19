@@ -1834,7 +1834,11 @@ class SpatialData:
             raise KeyError("table with name 'table' not present in the SpatialData object.")
 
     @staticmethod
-    def read(file_path: Path | str, selection: tuple[str] | None = None) -> SpatialData:
+    def read(
+        file_path: Path | str,
+        selection: tuple[str] | None = None,
+        storage_options: dict[str, Any] | None = None,
+    ) -> SpatialData:
         """
         Read a SpatialData object from a Zarr storage (on-disk or remote).
 
@@ -1844,6 +1848,8 @@ class SpatialData:
             The path or URL to the Zarr storage.
         selection
             The elements to read (images, labels, points, shapes, table). If None, all elements are read.
+        storage_options
+            FSSpec storage options for remote filesystems
 
         Returns
         -------
@@ -1851,7 +1857,7 @@ class SpatialData:
         """
         from spatialdata import read_zarr
 
-        return read_zarr(file_path, selection=selection)
+        return read_zarr(file_path, selection=selection, storage_options=storage_options)
 
     def add_image(
         self,
